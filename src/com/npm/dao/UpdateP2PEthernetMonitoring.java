@@ -23,7 +23,7 @@ public class UpdateP2PEthernetMonitoring implements Runnable{
     public void run() {
         System.out.println("Start update in P2P Ethernet Monitoring");
         int count = 0;
-        updateQuery = "update p2p_ethernet_monitoring set STATE=?,EVENT_TIMESTAMP=? where DEVICE_IP=? and LINK_IP=?";      
+        updateQuery = "update p2p_ethernet_monitoring set STATE=?, STATE_DESCRIPTION=?, EVENT_TIMESTAMP=? where DEVICE_IP=? and NEIGHBOUR_IP=?";      
 
         try {
             EthernetMonitoring.updateListTemp.clear();
@@ -48,9 +48,10 @@ public class UpdateP2PEthernetMonitoring implements Runnable{
                 try {
 //                    if (existingDeviceIPs.contains(trapLog.getDeviceIP())) {
                     preparedStatement.setString(1, log.getState());
-                    preparedStatement.setTimestamp(2, log.getEventTimestamp());
-                    preparedStatement.setString(3, log.getDeviceIp());
-                    preparedStatement.setString(4, log.getLinkIp());
+                    preparedStatement.setString(2, log.getStateDescription());
+                    preparedStatement.setTimestamp(3, log.getEventTimestamp());
+                    preparedStatement.setString(4, log.getDeviceIp());
+                    preparedStatement.setString(5, log.getLinkIp());
                
                     preparedStatement.addBatch();
 //                    } else {

@@ -5,6 +5,7 @@
  */
 package com.npm.main;
 
+import com.npm.dao.DatabaseHelper;
 import com.npm.model.P2PEthernetModel;
 import java.sql.Timestamp;
 import org.snmp4j.Target;
@@ -18,6 +19,7 @@ import org.snmp4j.smi.OID;
 public class P2PEthernetMon implements Runnable {
 
     P2PEthernetModel p2pObj = null;
+    DatabaseHelper db = new DatabaseHelper();
 
     public P2PEthernetMon(P2PEthernetModel model) {
         this.p2pObj = model;
@@ -30,25 +32,54 @@ public class P2PEthernetMon implements Runnable {
         String oid_state = "1.3.6.1.2.1.14.10.1.6." + p2pObj.getLinkIp() + "." + p2pObj.getNeighbourIndex();
         SNMPUtil su = new SNMPUtil();
         String oldState = null;
+        String isAffected = "";
+        String problem = "";
+        String serviceId = "p2p_state";
+        String eventMsg = null;
+        String netadmin_msg = null;
+        int severity;
+        String state_description = "";
+        Timestamp logtime = new Timestamp(System.currentTimeMillis());
         try {
             su.start();
 
-            Target target = su.getTarget("udp:" + deviceIP + "/161", p2pObj.getCommunity(), SnmpConstants.version2c);
+            Target target = null;
+            
+            if (P2PEthernetMonitoring.isSimulation) {
+            
+                target = su.getTarget("udp:127.0.0.1/161", p2pObj.getCommunity(), SnmpConstants.version2c);
+
+            } else {
+                target = su.getTarget("udp:" + deviceIP + "/161", p2pObj.getCommunity(), SnmpConstants.version2c);
+
+            }
 
             oid_state = su.BandwidthGetVect(target, "Out", new OID(oid_state));
+            
+            state_description = getState(Integer.valueOf(oid_state));
 
             P2PEthernetModel obj = new P2PEthernetModel();
             obj.setDeviceIp(deviceIP);
             obj.setDeviceName(p2pObj.getDeviceName());
             obj.setLinkIp(p2pObj.getLinkIp());
             obj.setState(oid_state);
-            obj.setStateDescription(getState(Integer.valueOf(oid_state)));
-            obj.setEventTimestamp(new Timestamp(System.currentTimeMillis()));
+            obj.setStateDescription(state_description);
+            obj.setEventTimestamp(logtime);
             EthernetMonitoring.updateList.add(obj);
+            EthernetMonitoring.updatelogList.add(obj);
 
-            oldState = EthernetMonitoring.stateStatus.get(deviceIP).toString().split("~")[0];
-            if (!oldState.equalsIgnoreCase(p2pObj.getState())) {
-                EthernetMonitoring.updatelogList.add(obj);
+            oldState = EthernetMonitoring.stateStatus.get(deviceIP).toString();
+            System.out.println("Old state = "+oldState);
+            if (!oldState.equalsIgnoreCase(oid_state)) {
+                
+                EthernetMonitoring.stateStatus.put(deviceIP, oid_state);
+
+                eventMsg = "P2P Ethernet Monitoring: state = " + oid_state + " - OSPF neighbor state for " + p2pObj.getLinkIp() + " is : " + state_description;
+                netadmin_msg = "P2P Ethernet Monitoring: state = " + oid_state + " - OSPF neighbor state for " + p2pObj.getLinkIp() + " is : " + state_description;;
+                isAffected = oid_state.equalsIgnoreCase("8") ? "0" : "1";
+                problem = oid_state.equalsIgnoreCase("8") ? "Cleared" : "problem";
+                severity = oid_state.equalsIgnoreCase("8") ? 0 : 4;
+                db.insertIntoEventLog(deviceIP, p2pObj.getDeviceName(), eventMsg, severity, "P2P Ethernet Monitoring", logtime, netadmin_msg, isAffected, problem, serviceId, "SWITCH"); //Evrnt log
             }
 
         } catch (Exception e) {

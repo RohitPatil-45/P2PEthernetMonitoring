@@ -17,9 +17,7 @@ import java.util.concurrent.TimeUnit;
  */
 public class P2PEthernetMonitoring {
 
-    /**
-     * @param args the command line arguments
-     */
+    public static boolean isSimulation = true;
     public static void main(String[] args) {
         try {
             Thread t2 = new Thread(new EthernetMonitoring());
@@ -32,10 +30,10 @@ public class P2PEthernetMonitoring {
         try {
             ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(2);
             //Insertion in SNMPTrapLog Table
-            scheduler.scheduleAtFixedRate(new UpdateP2PEthernetMonitoring(), 0, 30, TimeUnit.SECONDS);
+            scheduler.scheduleAtFixedRate(new UpdateP2PEthernetMonitoring(), 0, 10, TimeUnit.SECONDS);
 
             //update in snmp_trap_live_status;
-            scheduler.scheduleAtFixedRate(new P2PEthernetMonitoringLog(), 0, 30, TimeUnit.SECONDS);
+            scheduler.scheduleAtFixedRate(new P2PEthernetMonitoringLog(), 0, 10, TimeUnit.SECONDS);
         } catch (Exception e) {
              System.out.println("Exception === "+e);
         }

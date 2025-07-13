@@ -9,8 +9,10 @@ import com.npm.datasource.Datasource;
 import com.npm.main.EthernetMonitoring;
 import com.npm.model.P2PEthernetModel;
 import java.sql.Connection;
+import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.Statement;
+import java.sql.Timestamp;
 import java.util.HashMap;
 
 /**
@@ -20,9 +22,9 @@ import java.util.HashMap;
 public class DatabaseHelper {
 
     public HashMap<String, P2PEthernetModel> getNodeData() {
-         HashMap<String, P2PEthernetModel> mapNodeData = new HashMap();
+        HashMap<String, P2PEthernetModel> mapNodeData = new HashMap();
 
-        String selectQuery = "SELECT DEVICE_IP, DEVICE_NAME, NEIGHBOUR_IP, NEIGHBOUR_INDEX, STATE, COMMUNITY, STATE_DESCRIPTION FROM p2p_ethernet_monitoring WHERE MONITORING_PARAM='Yes'";
+        String selectQuery = "SELECT DEVICE_IP, DEVICE_NAME, NEIGHBOUR_IP, NEIGHBOUR_INDEX, STATE, COMMUNITY FROM p2p_ethernet_monitoring WHERE MONITORING_PARAM='Yes'";
         try (
                 Connection con = Datasource.getConnection();
                 Statement st = con.createStatement();
@@ -38,7 +40,7 @@ public class DatabaseHelper {
                 model.setCommunity(rs.getString("COMMUNITY"));
 
                 mapNodeData.put(rs.getString("DEVICE_IP"), model);
-                EthernetMonitoring.stateStatus.put(rs.getString("DEVICE_IP"), rs.getString("STATE") + "~" + rs.getString("STATE_DESCRIPTION"));
+                EthernetMonitoring.stateStatus.put(rs.getString("DEVICE_IP"), rs.getString("STATE"));
             }
 
         } catch (Exception e) {
@@ -46,5 +48,94 @@ public class DatabaseHelper {
         }
         return mapNodeData;
     }
-    
+
+    public void insertIntoEventLog(String deviceIP, String deviceName, String eventMsg, int severity, String serviceName, Timestamp logtime, String netadmin_msg, String isAffected, String problem, String serviceId, String deviceType) {
+        PreparedStatement preparedStatement1 = null;
+        PreparedStatement preparedStatement2 = null;
+        Connection connection = null;
+        try {
+            connection = Datasource.getConnection();
+            preparedStatement1 = connection.prepareStatement("INSERT INTO event_log (device_id, device_name, service_name, event_msg, netadmin_msg, severity,"
+                    + " event_timestamp, acknowledgement_status, isAffected, Problem_Clear, Service_ID, Device_Type) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)");
+            preparedStatement1.setString(1, deviceIP);
+            preparedStatement1.setString(2, deviceName);
+            preparedStatement1.setString(3, serviceName);
+            preparedStatement1.setString(4, eventMsg);
+            preparedStatement1.setString(5, netadmin_msg);
+            preparedStatement1.setInt(6, severity);
+            preparedStatement1.setTimestamp(7, logtime);
+            preparedStatement1.setBoolean(8, false);
+            preparedStatement1.setString(9, isAffected);
+            preparedStatement1.setString(10, problem);
+            preparedStatement1.setString(11, serviceId);
+            preparedStatement1.setString(12, deviceType);
+
+            preparedStatement1.executeUpdate();
+
+        } catch (Exception e) {
+            System.out.println(deviceIP + "inserting in event log Exception:" + e);
+        } finally {
+            try {
+                if (preparedStatement1 != null) {
+                    preparedStatement1.close();
+                }
+                if (connection != null) {
+                    connection.close();
+                }
+            } catch (Exception exp) {
+                System.out.println("excep:" + exp);
+            }
+        }
+
+        try {
+            if ("Cleared".equalsIgnoreCase(problem)) {
+
+                String updateQuery = "UPDATE event_log\n"
+                        + "SET\n"
+                        + "    Cleared_event_timestamp = ?,\n"
+                        // + "    netadmin_msg = ?,\n"
+                        + "netadmin_msg = CONCAT(netadmin_msg, ' => ', ?),\n"
+                        + "    isAffected = ?\n"
+                        + "WHERE\n"
+                        + "    ID = (\n"
+                        + "        SELECT id_alias.ID\n"
+                        + "        FROM (\n"
+                        + "            SELECT ID\n"
+                        + "            FROM event_log\n"
+                        + "            WHERE service_id = ?\n"
+                        + "              AND device_id = ?\n"
+                        + "            AND isaffected = '1' ORDER BY ID DESC\n"
+                        + "            LIMIT 1\n"
+                        + "        ) AS id_alias\n"
+                        + "    )\n"
+                        + ";";
+
+                connection = Datasource.getConnection();
+
+                preparedStatement2 = connection.prepareStatement(updateQuery);
+                preparedStatement2.setTimestamp(1, logtime);
+
+                preparedStatement2.setString(2, netadmin_msg); // To Do
+                preparedStatement2.setString(3, "0");
+                preparedStatement2.setString(4, serviceId);
+                preparedStatement2.setString(5, deviceIP);
+
+                preparedStatement2.executeUpdate();
+            }
+        } catch (Exception e) {
+            System.out.println("Exception in update event log = " + e);
+        } finally {
+            try {
+                if (preparedStatement2 != null) {
+                    preparedStatement2.close();
+                }
+                if (connection != null) {
+                    connection.close();
+                }
+            } catch (Exception exp) {
+                System.out.println("excep:" + exp);
+            }
+        }
+    }
+
 }

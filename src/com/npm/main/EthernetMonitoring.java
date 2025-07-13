@@ -37,7 +37,7 @@ public class EthernetMonitoring implements Runnable {
             
 
     private static final int THREAD_POOL_SIZE = 8;
-    private static final int MONITOR_INTERVAL_SECONDS = 30;
+    private static final int MONITOR_INTERVAL_SECONDS = 10;
 
     @Override
     public void run() {

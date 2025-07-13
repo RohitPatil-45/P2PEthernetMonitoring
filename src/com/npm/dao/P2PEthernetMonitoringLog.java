@@ -52,7 +52,7 @@ public class P2PEthernetMonitoringLog implements Runnable {
                     preparedStatement.setString(3, log.getLinkIp());
                     preparedStatement.setString(4, log.getState());
                     preparedStatement.setTimestamp(5, log.getEventTimestamp());
-                    preparedStatement.setString(4, log.getStateDescription());
+                    preparedStatement.setString(6, log.getStateDescription());
                    
                     preparedStatement.addBatch();
 //                    } else {
