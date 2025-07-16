@@ -22,6 +22,7 @@ public class P2PEthernetModel {
     private String neighbourIndex;
     private String community;
     private String stateDescription;
+    private Long timestamp_epoch;
 
     public Long getId() {
         return id;
@@ -93,6 +94,14 @@ public class P2PEthernetModel {
 
     public void setStateDescription(String stateDescription) {
         this.stateDescription = stateDescription;
+    }
+
+    public Long getTimestamp_epoch() {
+        return timestamp_epoch;
+    }
+
+    public void setTimestamp_epoch(Long timestamp_epoch) {
+        this.timestamp_epoch = timestamp_epoch;
     }
 
    

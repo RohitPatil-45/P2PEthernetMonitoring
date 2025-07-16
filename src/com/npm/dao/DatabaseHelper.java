@@ -139,17 +139,17 @@ public class DatabaseHelper {
         }
     }
 
-    public void neighbourStateStatus(String deviceIP, String state_description, String oid_state, Timestamp logtime) {
-        try {
-            OspfNeighbourStateModel node = new OspfNeighbourStateModel();
-            node.setDeviceIP(deviceIP);
-            node.setState(oid_state);
-            node.setState_description(state_description);
-            node.setEventTimestamp(logtime);
-            EthernetMonitoring.stateLog.add(node);
-        } catch (Exception exp) {
-            System.out.println(deviceIP + "Exception in adding neighbourStateStatus=" + exp);
-        }
-    }
+//    public void neighbourStateStatus(String deviceIP, String state_description, String oid_state, Timestamp logtime) {
+//        try {
+//            OspfNeighbourStateModel node = new OspfNeighbourStateModel();
+//            node.setDeviceIP(deviceIP);
+//            node.setState(oid_state);
+//            node.setState_description(state_description);
+//            node.setEventTimestamp(logtime);
+//            EthernetMonitoring.stateLog.add(node);
+//        } catch (Exception exp) {
+//            System.out.println(deviceIP + "Exception in adding neighbourStateStatus=" + exp);
+//        }
+//    }
 
 }

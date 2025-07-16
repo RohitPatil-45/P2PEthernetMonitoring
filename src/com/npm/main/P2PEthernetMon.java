@@ -40,6 +40,8 @@ public class P2PEthernetMon implements Runnable {
         int severity;
         String state_description = "";
         Timestamp logtime = new Timestamp(System.currentTimeMillis());
+        long epochTime = System.currentTimeMillis() / 1000;
+
         try {
             su.start();
 
@@ -65,6 +67,7 @@ public class P2PEthernetMon implements Runnable {
             obj.setState(oid_state);
             obj.setStateDescription(state_description);
             obj.setEventTimestamp(logtime);
+            obj.setTimestamp_epoch(epochTime);
             EthernetMonitoring.updateList.add(obj);
             EthernetMonitoring.updatelogList.add(obj);
 
@@ -79,7 +82,7 @@ public class P2PEthernetMon implements Runnable {
                 isAffected = oid_state.equalsIgnoreCase("8") ? "0" : "1";
                 problem = oid_state.equalsIgnoreCase("8") ? "Cleared" : "problem";
                 severity = oid_state.equalsIgnoreCase("8") ? 0 : 4;
-                db.neighbourStateStatus(deviceIP, state_description, oid_state, logtime);
+//                db.neighbourStateStatus(deviceIP, state_description, oid_state, logtime);
                 db.insertIntoEventLog(deviceIP, p2pObj.getDeviceName(), eventMsg, severity, "P2P Ethernet Monitoring", logtime, netadmin_msg, isAffected, problem, serviceId, "SWITCH"); //Evrnt log
             }
 

@@ -36,8 +36,8 @@ public class EthernetMonitoring implements Runnable {
 
     public static HashMap stateStatus = null;
 
-    public static ArrayList<OspfNeighbourStateModel> stateLog = null;
-    public static ArrayList<OspfNeighbourStateModel> stateLogTemp = null;
+//    public static ArrayList<OspfNeighbourStateModel> stateLog = null;
+//    public static ArrayList<OspfNeighbourStateModel> stateLogTemp = null;
 
     private static final int THREAD_POOL_SIZE = 8;
     private static final int MONITOR_INTERVAL_SECONDS = 10;
@@ -52,8 +52,8 @@ public class EthernetMonitoring implements Runnable {
 
         stateStatus = new HashMap<>();
         
-        stateLog = new ArrayList<>();
-        stateLogTemp = new ArrayList<>();
+//        stateLog = new ArrayList<>();
+//        stateLogTemp = new ArrayList<>();
 
         DatabaseHelper helper = new DatabaseHelper();
         mapNodeData = helper.getNodeData();
