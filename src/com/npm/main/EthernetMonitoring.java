@@ -7,6 +7,7 @@ package com.npm.main;
 
 import com.npm.dao.DatabaseHelper;
 import com.npm.datasource.Datasource;
+import com.npm.model.OspfNeighbourStateModel;
 import com.npm.model.P2PEthernetModel;
 import java.sql.Connection;
 import java.sql.ResultSet;
@@ -32,9 +33,11 @@ public class EthernetMonitoring implements Runnable {
 
     public static ArrayList<P2PEthernetModel> updatelogList = null;
     public static ArrayList<P2PEthernetModel> updateListlogTemp = null;
-    
+
     public static HashMap stateStatus = null;
-            
+
+    public static ArrayList<OspfNeighbourStateModel> stateLog = null;
+    public static ArrayList<OspfNeighbourStateModel> stateLogTemp = null;
 
     private static final int THREAD_POOL_SIZE = 8;
     private static final int MONITOR_INTERVAL_SECONDS = 10;
@@ -46,10 +49,12 @@ public class EthernetMonitoring implements Runnable {
 
         updatelogList = new ArrayList<>();
         updateListlogTemp = new ArrayList<>();
-        
+
         stateStatus = new HashMap<>();
         
-       
+        stateLog = new ArrayList<>();
+        stateLogTemp = new ArrayList<>();
+
         DatabaseHelper helper = new DatabaseHelper();
         mapNodeData = helper.getNodeData();
         System.out.println(mapNodeData.size() + ":EthernetMonitoring:" + mapNodeData);

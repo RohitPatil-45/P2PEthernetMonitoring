@@ -7,6 +7,7 @@ package com.npm.dao;
 
 import com.npm.datasource.Datasource;
 import com.npm.main.EthernetMonitoring;
+import com.npm.model.OspfNeighbourStateModel;
 import com.npm.model.P2PEthernetModel;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -135,6 +136,19 @@ public class DatabaseHelper {
             } catch (Exception exp) {
                 System.out.println("excep:" + exp);
             }
+        }
+    }
+
+    public void neighbourStateStatus(String deviceIP, String state_description, String oid_state, Timestamp logtime) {
+        try {
+            OspfNeighbourStateModel node = new OspfNeighbourStateModel();
+            node.setDeviceIP(deviceIP);
+            node.setState(oid_state);
+            node.setState_description(state_description);
+            node.setEventTimestamp(logtime);
+            EthernetMonitoring.stateLog.add(node);
+        } catch (Exception exp) {
+            System.out.println(deviceIP + "Exception in adding neighbourStateStatus=" + exp);
         }
     }
 

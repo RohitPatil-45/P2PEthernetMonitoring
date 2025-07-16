@@ -5,6 +5,7 @@
  */
 package com.npm.main;
 
+import com.npm.dao.P2PStateHistory;
 import com.npm.dao.P2PEthernetMonitoringLog;
 import com.npm.dao.UpdateP2PEthernetMonitoring;
 import java.util.concurrent.Executors;
@@ -28,12 +29,16 @@ public class P2PEthernetMonitoring {
         
         
         try {
-            ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(2);
+            ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(3);
             //Insertion in SNMPTrapLog Table
             scheduler.scheduleAtFixedRate(new UpdateP2PEthernetMonitoring(), 0, 10, TimeUnit.SECONDS);
 
             //update in snmp_trap_live_status;
             scheduler.scheduleAtFixedRate(new P2PEthernetMonitoringLog(), 0, 10, TimeUnit.SECONDS);
+            
+            //insert into p2p state history
+            scheduler.scheduleAtFixedRate(new P2PStateHistory(), 0, 10, TimeUnit.SECONDS);
+            
         } catch (Exception e) {
              System.out.println("Exception === "+e);
         }

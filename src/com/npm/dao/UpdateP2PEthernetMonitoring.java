@@ -15,15 +15,15 @@ import java.sql.PreparedStatement;
  *
  * @author Kratos
  */
-public class UpdateP2PEthernetMonitoring implements Runnable{
+public class UpdateP2PEthernetMonitoring implements Runnable {
 
-   String updateQuery = null;
+    String updateQuery = null;
 
     @Override
     public void run() {
         System.out.println("Start update in P2P Ethernet Monitoring");
         int count = 0;
-        updateQuery = "update p2p_ethernet_monitoring set STATE=?, STATE_DESCRIPTION=?, EVENT_TIMESTAMP=? where DEVICE_IP=? and NEIGHBOUR_IP=?";      
+        updateQuery = "update p2p_ethernet_monitoring set STATE=?, STATE_DESCRIPTION=?, EVENT_TIMESTAMP=?, STATE_GENERATE_TIME=?, STATE_CLEAR_TIME=? where DEVICE_IP=? and NEIGHBOUR_IP=?";
 
         try {
             EthernetMonitoring.updateListTemp.clear();
@@ -50,9 +50,11 @@ public class UpdateP2PEthernetMonitoring implements Runnable{
                     preparedStatement.setString(1, log.getState());
                     preparedStatement.setString(2, log.getStateDescription());
                     preparedStatement.setTimestamp(3, log.getEventTimestamp());
-                    preparedStatement.setString(4, log.getDeviceIp());
-                    preparedStatement.setString(5, log.getLinkIp());
-               
+                    preparedStatement.setTimestamp(4, !log.getState().equalsIgnoreCase("8") ? log.getEventTimestamp() : null);
+                    preparedStatement.setTimestamp(5, log.getState().equalsIgnoreCase("8") ? log.getEventTimestamp() : null);
+                    preparedStatement.setString(6, log.getDeviceIp());
+                    preparedStatement.setString(7, log.getLinkIp());
+
                     preparedStatement.addBatch();
 //                    } else {
 //                        System.out.println("inside insert");
@@ -90,5 +92,5 @@ public class UpdateP2PEthernetMonitoring implements Runnable{
         }
 
     }
-    
+
 }
