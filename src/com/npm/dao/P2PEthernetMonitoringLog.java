@@ -23,7 +23,8 @@ public class P2PEthernetMonitoringLog implements Runnable {
     public void run() {
         System.out.println("Start update in P2P_Ethernet_Monitoring_Log");
         int count = 0;
-        insertQuery = "insert into p2p_ethernet_monitoring_log (DEVICE_IP, DEVICE_NAME, NEIGHBOUR_IP, STATE, EVENT_TIMESTAMP, STATE_DESCRIPTION, timestamp_epoch) VALUES (?,?,?,?,?,?,?)";
+        insertQuery = "insert into p2p_ethernet_monitoring_log (DEVICE_IP, DEVICE_NAME, NEIGHBOUR_IP, STATE, EVENT_TIMESTAMP, STATE_DESCRIPTION, timestamp_epoch, STATUS) "
+                + "VALUES (?,?,?,?,?,?,?,?)";
 
         try {
             EthernetMonitoring.updateListlogTemp.clear();
@@ -54,7 +55,7 @@ public class P2PEthernetMonitoringLog implements Runnable {
                     preparedStatement.setTimestamp(5, log.getEventTimestamp());
                     preparedStatement.setString(6, log.getStateDescription());
                     preparedStatement.setLong(7, log.getTimestamp_epoch());
-
+                    preparedStatement.setString(8, log.getState().equalsIgnoreCase("8") ? "Up" : "Down");
                     preparedStatement.addBatch();
 //                    } else {
 //                        System.out.println("inside insert");
