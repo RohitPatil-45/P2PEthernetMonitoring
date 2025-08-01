@@ -2,11 +2,6 @@
 <project-private xmlns="http://www.netbeans.org/ns/project-private/1">
     <editor-bookmarks xmlns="http://www.netbeans.org/ns/editor-bookmarks/2" lastBookmarkId="0"/>
     <open-files xmlns="http://www.netbeans.org/ns/projectui-open-files/2">
-        <group name="Bescom_Agents">
-            <file>file:/E:/Bescom_NMS/INMSAllAgentRepo/P2PEthernetMonitoring/src/com/npm/main/P2PEthernetMon.java</file>
-            <file>file:/E:/Bescom_NMS/INMSAllAgentRepo/P2PEthernetMonitoring/src/com/npm/dao/UpdateP2PEthernetMonitoring.java</file>
-            <file>file:/E:/Bescom_NMS/INMSAllAgentRepo/P2PEthernetMonitoring/src/com/npm/main/EthernetMonitoring.java</file>
-            <file>file:/E:/Bescom_NMS/INMSAllAgentRepo/P2PEthernetMonitoring/src/com/npm/dao/P2PEthernetMonitoringLog.java</file>
-        </group>
+        <group name="Bescom_Agents"/>
     </open-files>
 </project-private>
