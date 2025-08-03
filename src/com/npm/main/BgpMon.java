@@ -10,7 +10,12 @@ import com.npm.dao.DatabaseHelper;
 import com.npm.model.EventLog;
 import com.npm.model.P2PEthernetModel;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.PrintStream;
 import java.sql.Timestamp;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+import org.apache.commons.net.telnet.TelnetClient;
 import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.entity.StringEntity;
@@ -24,129 +29,121 @@ import org.snmp4j.smi.OID;
  *
  * @author Kratos
  */
-public class P2PEthernetMon implements Runnable {
+public class BgpMon implements Runnable {
 
     P2PEthernetModel p2pObj = null;
     DatabaseHelper db = new DatabaseHelper();
+
+    private TelnetClient telnet = new TelnetClient();
+    private InputStream in;
+    private PrintStream out;
+
+    private String address;
+    private String username;
+    private String password;
 
     private static final int MAX_RETRIES = 3;
     private static final int RETRY_DELAY_MS = 2000;
 
     private final ObjectMapper mapper = new ObjectMapper();
 
-    public P2PEthernetMon(P2PEthernetModel model) {
+    public BgpMon(P2PEthernetModel model) {
         this.p2pObj = model;
     }
 
     @Override
     public void run() {
         String deviceIP = p2pObj.getDeviceIp();
-        //String oid_state = "1.3.6.1.4.1.2509.8.18.2.10.1.12.1"; // state : value must be between 1 to 8
-        String oid_state = "1.3.6.1.2.1.14.10.1.6." + p2pObj.getLinkIp() + "." + p2pObj.getNeighbourIndex();
-        SNMPUtil su = new SNMPUtil();
-        String oldState = null;
+
         String isAffected = "";
         String problem = "";
-        String serviceId = "p2p_state";
+        String serviceId = "bgp_state";
         String eventMsg = null;
         String netadmin_msg = null;
         int severity;
         String state_description = "";
+        String stateText = "";
+        String stateValue = "";
+        String bgp_status = "";
+        String oldBgpState = null;
         Timestamp logtime = new Timestamp(System.currentTimeMillis());
         long epochTime = System.currentTimeMillis() / 1000;
 
         try {
-            su.start();
+            telnet.connect(address, 23);
+            in = telnet.getInputStream();
+            out = new PrintStream(telnet.getOutputStream());
 
-            Target target = null;
+            readUntil("Username:");
+            write(username);
 
-            if (P2PEthernetMonitoring.isSimulation) {
+            readUntil("Password:");
+            write(password);
 
-                target = su.getTarget("udp:127.0.0.1/161", p2pObj.getCommunity(), SnmpConstants.version2c);
+            String result = sendCommand("show ip bgp neighbors | include BGP state");
 
+            Pattern pattern = Pattern.compile("BGP state = (\\w+)");
+            Matcher matcher = pattern.matcher(result);
+
+            if (matcher.find()) {
+                stateText = matcher.group(1);
+                stateValue = "Established".equalsIgnoreCase(stateText) ? "1" : "0";
+                bgp_status = "Established".equalsIgnoreCase(stateText) ? "Up" : "Down";
+
+                db.BgpStateStatus(deviceIP, p2pObj.getDeviceName(), stateValue, stateText, logtime, bgp_status, epochTime);
+
+                oldBgpState = EthernetMonitoring.bgpState.get(deviceIP).toString();
+                if (!oldBgpState.equalsIgnoreCase(stateValue)) {
+
+                    eventMsg = "BGP State value = " + stateValue;
+                    netadmin_msg = eventMsg;
+                    isAffected = "Established".equalsIgnoreCase(stateText) ? "1" : "0";;
+                    problem = "Established".equalsIgnoreCase(stateText) ? "Cleared" : "problem";
+                    sendEventLogToApi(deviceIP, p2pObj.getDeviceName(), eventMsg, 5, "BGP_State", logtime, netadmin_msg, isAffected, problem, serviceId, "SWITCH", 0);
+
+                }
+
+                System.out.println("BGP State Text: " + stateText);
+                System.out.println("BGP State Value: " + stateValue);
             } else {
-                target = su.getTarget("udp:" + deviceIP + "/161", p2pObj.getCommunity(), SnmpConstants.version2c);
-
+                System.out.println("BGP State not found in response.");
             }
 
-            oid_state = su.BandwidthGetVect(target, "Out", new OID(oid_state));
-
-            state_description = getState(Integer.valueOf(oid_state));
-
-            P2PEthernetModel obj = new P2PEthernetModel();
-            obj.setDeviceIp(deviceIP);
-            obj.setDeviceName(p2pObj.getDeviceName());
-            obj.setLinkIp(p2pObj.getLinkIp());
-            obj.setState(oid_state);
-            obj.setStateDescription(state_description);
-            obj.setEventTimestamp(logtime);
-            obj.setTimestamp_epoch(epochTime);
-            EthernetMonitoring.updateList.add(obj);
-            EthernetMonitoring.updatelogList.add(obj);
-
-            oldState = EthernetMonitoring.stateStatus.get(deviceIP).toString();
-            System.out.println("Old state = " + oldState);
-            if (!oldState.equalsIgnoreCase(oid_state)) {
-
-                EthernetMonitoring.stateStatus.put(deviceIP, oid_state);
-
-                eventMsg = "P2P Ethernet Monitoring: state = " + oid_state + " - OSPF neighbor state for " + p2pObj.getLinkIp() + " is : " + state_description;
-                netadmin_msg = "P2P Ethernet Monitoring: state = " + oid_state + " - OSPF neighbor state for " + p2pObj.getLinkIp() + " is : " + state_description;;
-                isAffected = oid_state.equalsIgnoreCase("8") ? "0" : "1";
-                problem = oid_state.equalsIgnoreCase("8") ? "Cleared" : "problem";
-                severity = oid_state.equalsIgnoreCase("8") ? 0 : 4;
-                db.neighbourStateStatus(deviceIP, state_description, oid_state, logtime);
-//                db.insertIntoEventLog(deviceIP, p2pObj.getDeviceName(), eventMsg, severity, "P2P Ethernet Monitoring", logtime, netadmin_msg, isAffected, problem, serviceId, "SWITCH"); //Evrnt log
-                sendEventLogToApi(deviceIP, p2pObj.getDeviceName(), eventMsg, severity, "P2P Ethernet Monitoring", logtime, netadmin_msg, isAffected, problem, serviceId, "SWITCH", 0);
-            }
+            sendCommand("quit");
+            telnet.disconnect();
 
         } catch (Exception e) {
-            System.out.println("Exception while fetching SNMP values: " + e);
-        } finally {
-            try {
-                su.stop();
-            } catch (Exception ex2) {
-                System.out.println("SNMP Close Exception: " + ex2);
-            }
+            e.printStackTrace();
         }
 
     }
 
-    public String getState(int state) {
+    private void write(String value) {
+        out.println(value);
+        out.flush();
+    }
 
-        String stateString = null;
-        switch (state) {
-            case 1:
-                stateString = "down";
+    private String readUntil(String pattern) throws Exception {
+        char lastChar = pattern.charAt(pattern.length() - 1);
+        StringBuilder sb = new StringBuilder();
+        char ch;
+        while ((ch = (char) in.read()) != -1) {
+            sb.append(ch);
+            if (ch == lastChar && sb.toString().endsWith(pattern)) {
                 break;
-            case 2:
-                stateString = "attempt";
-                break;
-            case 3:
-                stateString = "init";
-                break;
-            case 4:
-                stateString = "twoWay";
-                break;
-            case 5:
-                stateString = "exchangeStart";
-                break;
-            case 6:
-                stateString = "exchange";
-                break;
-            case 7:
-                stateString = "loading";
-                break;
-            case 8:
-                stateString = "full";
-                break;
-            default:
-                stateString = "unknown";
-                break;
+            }
         }
+        return sb.toString();
+    }
 
-        return stateString;
-
+    private String sendCommand(String command) throws Exception {
+        write(command);
+        Thread.sleep(1000); // wait for output
+        StringBuilder sb = new StringBuilder();
+        while (in.available() > 0) {
+            sb.append((char) in.read());
+        }
+        return sb.toString();
     }
 
     public void sendEventLogToApi(String deviceID, String deviceName, String eventMsg, int severity, String serviceName, Timestamp evenTimestamp,

@@ -7,6 +7,7 @@ package com.npm.dao;
 
 import com.npm.datasource.Datasource;
 import com.npm.main.EthernetMonitoring;
+import com.npm.model.BgpNeighbourState;
 import com.npm.model.OspfNeighbourStateModel;
 import com.npm.model.P2PEthernetModel;
 import java.sql.Connection;
@@ -46,6 +47,27 @@ public class DatabaseHelper {
 
         } catch (Exception e) {
             System.out.println("Exception while fetching P2PEthernet link ip = " + e);
+        }
+        return mapNodeData;
+    }
+    
+    
+    public HashMap<String, String> getBgpState() {
+        HashMap<String, String> mapNodeData = new HashMap();
+
+        String selectQuery = "SELECT device_ip, state FROM bgp_neighbour_state";
+        try (
+                Connection con = Datasource.getConnection();
+                Statement st = con.createStatement();
+                ResultSet rs = st.executeQuery(selectQuery);) {
+
+            while (rs.next()) {
+              
+                EthernetMonitoring.bgpState.put(rs.getString("DEVICE_IP"), rs.getString("STATE"));
+            }
+
+        } catch (Exception e) {
+            System.out.println("Exception while fetching Bgp State = " + e);
         }
         return mapNodeData;
     }
@@ -149,6 +171,24 @@ public class DatabaseHelper {
             EthernetMonitoring.stateLog.add(node);
         } catch (Exception exp) {
             System.out.println(deviceIP + "Exception in adding neighbourStateStatus=" + exp);
+        }
+    }
+
+    public void BgpStateStatus(String deviceIP, String deviceName, String stateValue, String stateText, Timestamp logtime, String bgp_status, Long epochTime) {
+
+        try {
+            BgpNeighbourState obj = new BgpNeighbourState();
+            obj.setIp(deviceIP);
+            obj.setDeviceName(deviceName);
+            obj.setState(stateValue);
+            obj.setState_description(stateText);
+            obj.setTimestamp(logtime);
+            obj.setBgpStatus(bgp_status);
+            obj.setTimestamp_epoch(epochTime);
+            EthernetMonitoring.updateBgpList.add(obj);
+            EthernetMonitoring.updateBgpLogList.add(obj);
+        } catch (Exception exp) {
+            System.out.println(deviceIP + "Exception in adding BgpStateStatus=" + exp);
         }
     }
 

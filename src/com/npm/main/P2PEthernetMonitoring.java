@@ -5,8 +5,10 @@
  */
 package com.npm.main;
 
+import com.npm.dao.BgpNeighbourStateLog;
 import com.npm.dao.P2PStateHistory;
 import com.npm.dao.P2PEthernetMonitoringLog;
+import com.npm.dao.UpdateBgpNeighbourState;
 import com.npm.dao.UpdateP2PEthernetMonitoring;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
@@ -29,7 +31,7 @@ public class P2PEthernetMonitoring {
         
         
         try {
-            ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(3);
+            ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(5);
             //Insertion in SNMPTrapLog Table
             scheduler.scheduleAtFixedRate(new UpdateP2PEthernetMonitoring(), 0, 10, TimeUnit.SECONDS);
 
@@ -38,6 +40,12 @@ public class P2PEthernetMonitoring {
             
             //insert into p2p state history
             scheduler.scheduleAtFixedRate(new P2PStateHistory(), 0, 10, TimeUnit.SECONDS);
+            
+            //update bgp_neighbour_state
+            scheduler.scheduleAtFixedRate(new UpdateBgpNeighbourState(), 0, 10, TimeUnit.SECONDS);
+            
+            //insert into bgp_monitoring_log
+            scheduler.scheduleAtFixedRate(new BgpNeighbourStateLog(), 0, 10, TimeUnit.SECONDS);
             
         } catch (Exception e) {
              System.out.println("Exception === "+e);

@@ -7,6 +7,7 @@ package com.npm.main;
 
 import com.npm.dao.DatabaseHelper;
 import com.npm.datasource.Datasource;
+import com.npm.model.BgpNeighbourState;
 import com.npm.model.OspfNeighbourStateModel;
 import com.npm.model.P2PEthernetModel;
 import java.sql.Connection;
@@ -31,10 +32,17 @@ public class EthernetMonitoring implements Runnable {
     public static ArrayList<P2PEthernetModel> updateList = null;
     public static ArrayList<P2PEthernetModel> updateListTemp = null;
 
+    public static ArrayList<BgpNeighbourState> updateBgpList = null;
+    public static ArrayList<BgpNeighbourState> updateBgpListTemp = null;
+
+    public static ArrayList<BgpNeighbourState> updateBgpLogList = null;
+    public static ArrayList<BgpNeighbourState> updateBgpLogListTemp = null;
+
     public static ArrayList<P2PEthernetModel> updatelogList = null;
     public static ArrayList<P2PEthernetModel> updateListlogTemp = null;
 
     public static HashMap stateStatus = null;
+    public static HashMap bgpState = null;
 
     public static ArrayList<OspfNeighbourStateModel> stateLog = null;
     public static ArrayList<OspfNeighbourStateModel> stateLogTemp = null;
@@ -47,16 +55,24 @@ public class EthernetMonitoring implements Runnable {
         updateList = new ArrayList<>();
         updateListTemp = new ArrayList<>();
 
+        updateBgpList = new ArrayList<>();
+        updateBgpListTemp = new ArrayList<>();
+
+        updateBgpLogList = new ArrayList<>();
+        updateBgpLogListTemp = new ArrayList<>();
+
         updatelogList = new ArrayList<>();
         updateListlogTemp = new ArrayList<>();
 
         stateStatus = new HashMap<>();
-        
+        bgpState = new HashMap<>();
+
         stateLog = new ArrayList<>();
         stateLogTemp = new ArrayList<>();
 
         DatabaseHelper helper = new DatabaseHelper();
         mapNodeData = helper.getNodeData();
+        helper.getBgpState();
         System.out.println(mapNodeData.size() + ":EthernetMonitoring:" + mapNodeData);
 
         Iterator<Map.Entry<String, P2PEthernetModel>> itr = mapNodeData.entrySet().iterator();
@@ -67,8 +83,10 @@ public class EthernetMonitoring implements Runnable {
             P2PEthernetModel model = entry.getValue();
 
             Runnable task = new P2PEthernetMon(model);
+            Runnable task2 = new BgpMon(model);
 
             scheduler.scheduleAtFixedRate(task, 0, MONITOR_INTERVAL_SECONDS, TimeUnit.SECONDS);
+            scheduler.scheduleAtFixedRate(task2, 0, MONITOR_INTERVAL_SECONDS, TimeUnit.SECONDS);
         }
     }
 
